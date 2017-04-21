@@ -300,6 +300,7 @@ public class FileTreeWatcher {
                                 watchedDirectory.addItem(directoryItem);
                                 if (isModifiedNotYetReported){
                                     isModifiedNotYetReported = false;
+                                    System.out.println("++++///*** fireWatchEvent(MODIFIED 1");
                                     fireWatchEvent(MODIFIED, eventDirectoryPath, true);
                                 }
                                 fireWatchEvent(CREATED, fsItem, directoryItem.isDirectory());
@@ -317,6 +318,7 @@ public class FileTreeWatcher {
                                 continue;
                             }
                             if (lastModified != directoryItem.getLastModified() && Files.isRegularFile(fsItem)) {
+                                System.out.println("++++///*** fireWatchEvent(MODIFIED 2");
                                 fireWatchEvent(MODIFIED, fsItem, false);
                             }
                             directoryItem.touch(lastModified);
@@ -331,6 +333,7 @@ public class FileTreeWatcher {
                         iterator.remove();
                         if (isModifiedNotYetReported){
                             isModifiedNotYetReported = false;
+                            System.out.println("++++///*** fireWatchEvent(MODIFIED 3");
                             fireWatchEvent(MODIFIED, eventDirectoryPath, true);
                         }
                         fireWatchEvent(DELETED, eventDirectoryPath.resolve(directoryItem.getName()), directoryItem.isDirectory());

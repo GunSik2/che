@@ -36,6 +36,7 @@ import org.eclipse.che.ide.api.notification.StatusNotification;
 import org.eclipse.che.ide.api.resources.VirtualFile;
 import org.eclipse.che.ide.ext.java.client.tree.library.JarFileNode;
 import org.eclipse.che.ide.util.dom.Elements;
+import org.eclipse.che.ide.util.loging.Log;
 import org.eclipse.che.plugin.maven.client.MavenLocalizationConstant;
 import org.eclipse.che.plugin.maven.client.MavenResources;
 import org.eclipse.che.plugin.maven.client.service.MavenServerServiceClient;
@@ -113,6 +114,7 @@ public class ClassFileSourcesDownloader implements EditorOpenedEventHandler {
             @Override
             public void apply(Boolean arg) throws OperationException {
                 if (arg) {
+                    Log.error(getClass(), "-- fire FileContentUpdateEvent 333");
                     eventBus.fireEvent(new FileContentUpdateEvent(path));
                 } else {
                     notificationManager.notify(constant.mavenClassDownloadFailed(path), StatusNotification.Status.FAIL, EMERGE_MODE);

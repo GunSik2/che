@@ -14,8 +14,9 @@ import com.google.common.hash.Hashing;
 
 import org.eclipse.che.api.core.ForbiddenException;
 import org.eclipse.che.api.core.ServerException;
-import org.eclipse.che.api.core.jsonrpc.RequestHandlerConfigurator;
 import org.eclipse.che.api.core.jsonrpc.RequestTransmitter;
+import org.eclipse.che.api.core.notification.EventService;
+import org.eclipse.che.api.core.notification.EventSubscriber;
 import org.eclipse.che.api.project.shared.dto.event.FileStateUpdateDto;
 import org.eclipse.che.api.project.shared.dto.event.FileTrackingOperationDto;
 import org.eclipse.che.api.project.shared.dto.event.FileTrackingOperationDto.Type;
@@ -36,7 +37,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static java.nio.charset.Charset.defaultCharset;
@@ -67,7 +67,6 @@ public class EditorFileTracker {
     private static final Logger LOG = getLogger(EditorFileTracker.class);
 
     private static final String OUTGOING_METHOD = "event:file-state-changed";
-    private static final String INCOMING_METHOD = "track:editor-file";
 
     private final Map<String, String>  hashRegistry    = new HashMap<>();
     private final Map<String, Integer> watchIdRegistry = new HashMap<>();
@@ -79,89 +78,88 @@ public class EditorFileTracker {
 
 
     @Inject
-    public EditorFileTracker(@Named("che.user.workspaces.storage") File root, FileWatcherManager fileWatcherManager,
+    public EditorFileTracker(@Named("che.user.workspaces.storage") File root,
+                             FileWatcherManager fileWatcherManager,
                              RequestTransmitter transmitter,
-                             VirtualFileSystemProvider vfsProvider) {
+                             VirtualFileSystemProvider vfsProvider,
+                             EventService eventService) {
         this.root = root;
         this.fileWatcherManager = fileWatcherManager;
         this.transmitter = transmitter;
         this.vfsProvider = vfsProvider;
-    }
 
-    @Inject
-    public void configureHandler(RequestHandlerConfigurator configurator) {
-        configurator.newConfiguration()
-                    .methodName(INCOMING_METHOD)
-                    .paramsAsDto(FileTrackingOperationDto.class)
-                    .noResult()
-                    .withConsumer(getFileTrackingOperationConsumer());
-    }
-
-    private BiConsumer<String, FileTrackingOperationDto> getFileTrackingOperationConsumer() {
-        return (String endpointId, FileTrackingOperationDto operation) -> {
-            Type type = operation.getType();
-            String path = operation.getPath();
-            String oldPath = operation.getOldPath();
-
-            switch (type) {
-                case START: {
-                    String key = path + endpointId;
-                    LOG.debug("Received file tracking operation START trigger key : {}", key);
-                    if (watchIdRegistry.containsKey(key)) {
-                        LOG.debug("Already registered {}", key);
-                        return;
-                    }
-                    int id = fileWatcherManager.registerByPath(path,
-                                                               getCreateConsumer(endpointId, path),
-                                                               getModifyConsumer(endpointId, path),
-                                                               getDeleteConsumer(endpointId, path));
-                    watchIdRegistry.put(key, id);
-                    break;
-                }
-                case STOP: {
-                    LOG.debug("Received file tracking operation STOP trigger.");
-
-                    int id = watchIdRegistry.remove(path + endpointId);
-                    fileWatcherManager.unRegisterByPath(id);
-
-                    break;
-                }
-                case SUSPEND: {
-                    LOG.debug("Received file tracking operation SUSPEND trigger.");
-
-                    fileWatcherManager.suspend();
-
-                    break;
-                }
-                case RESUME: {
-                    LOG.debug("Received file tracking operation RESUME trigger.");
-
-                    fileWatcherManager.resume();
-
-                    break;
-                }
-                case MOVE: {
-                    LOG.debug("Received file tracking operation MOVE trigger.");
-
-                    int oldId = watchIdRegistry.remove(oldPath + endpointId);
-                    fileWatcherManager.unRegisterByPath(oldId);
-
-                    int newId = fileWatcherManager.registerByPath(path,
-                                                                  getCreateConsumer(endpointId, path),
-                                                                  getModifyConsumer(endpointId, path),
-                                                                  getDeleteConsumer(endpointId, path));
-                    watchIdRegistry.put(path + endpointId, newId);
-
-
-                    break;
-                }
-                default: {
-                    LOG.error("Received file tracking operation UNKNOWN trigger.");
-
-                    break;
-                }
+        eventService.subscribe(new EventSubscriber<FileTrackingOperationEvent>() {
+            @Override
+            public void onEvent(FileTrackingOperationEvent event) {
+                onFileTrackingOperationReceived(event.getEndpointId(), event.getFileTrackingOperation());
             }
-        };
+        });
+    }
+
+    private void onFileTrackingOperationReceived(String endpointId, FileTrackingOperationDto operation) {
+        Type type = operation.getType();
+        String path = operation.getPath();
+        String oldPath = operation.getOldPath();
+
+        switch (type) {
+            case START: {
+                String key = path + endpointId;
+                LOG.debug("Received file tracking operation START trigger key : {}", key);
+                if (watchIdRegistry.containsKey(key)) {
+                    LOG.debug("Already registered {}", key);
+                    return;
+                }
+                int id = fileWatcherManager.registerByPath(path,
+                                                           getCreateConsumer(endpointId, path),
+                                                           getModifyConsumer(endpointId, path),
+                                                           getDeleteConsumer(endpointId, path));
+                watchIdRegistry.put(key, id);
+
+                break;
+            }
+            case STOP: {
+                LOG.debug("Received file tracking operation STOP trigger.");
+
+                int id = watchIdRegistry.remove(path + endpointId);
+                fileWatcherManager.unRegisterByPath(id);
+
+                break;
+            }
+            case SUSPEND: {
+                LOG.debug("Received file tracking operation SUSPEND trigger.");
+
+                fileWatcherManager.suspend();
+
+                break;
+            }
+            case RESUME: {
+                LOG.debug("Received file tracking operation RESUME trigger.");
+
+                fileWatcherManager.resume();
+
+                break;
+            }
+            case MOVE: {
+                LOG.debug("Received file tracking operation MOVE trigger.");
+
+
+                int oldId = watchIdRegistry.remove(oldPath + endpointId);
+                fileWatcherManager.unRegisterByPath(oldId);
+
+                int newId = fileWatcherManager.registerByPath(path,
+                                                              getCreateConsumer(endpointId, path),
+                                                              getModifyConsumer(endpointId, path),
+                                                              getDeleteConsumer(endpointId, path));
+                watchIdRegistry.put(path + endpointId, newId);
+
+                break;
+            }
+            default: {
+                LOG.error("Received file tracking operation UNKNOWN trigger.");
+
+                break;
+            }
+        }
     }
 
     private Consumer<String> getCreateConsumer(String endpointId, String path) {

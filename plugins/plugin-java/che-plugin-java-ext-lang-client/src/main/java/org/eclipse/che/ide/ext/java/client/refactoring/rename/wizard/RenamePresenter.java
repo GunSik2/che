@@ -11,6 +11,7 @@
 package org.eclipse.che.ide.ext.java.client.refactoring.rename.wizard;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.web.bindery.event.shared.EventBus;
@@ -28,7 +29,6 @@ import org.eclipse.che.ide.api.dialogs.DialogFactory;
 import org.eclipse.che.ide.api.editor.EditorAgent;
 import org.eclipse.che.ide.api.editor.EditorPartPresenter;
 import org.eclipse.che.ide.api.editor.texteditor.TextEditor;
-import org.eclipse.che.ide.api.event.ng.FileTrackingEvent;
 import org.eclipse.che.ide.api.notification.NotificationManager;
 import org.eclipse.che.ide.api.resources.Container;
 import org.eclipse.che.ide.api.resources.Project;
@@ -53,13 +53,12 @@ import org.eclipse.che.ide.ext.java.shared.dto.refactoring.RefactoringStatusEntr
 import org.eclipse.che.ide.ext.java.shared.dto.refactoring.RenameRefactoringSession;
 import org.eclipse.che.ide.ext.java.shared.dto.refactoring.RenameSettings;
 import org.eclipse.che.ide.ext.java.shared.dto.refactoring.ValidateNewName;
+import org.eclipse.che.ide.util.loging.Log;
 
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkState;
-import static org.eclipse.che.api.project.shared.dto.event.FileTrackingOperationDto.Type.MOVE;
-import static org.eclipse.che.api.project.shared.dto.event.FileTrackingOperationDto.Type.RESUME;
-import static org.eclipse.che.api.project.shared.dto.event.FileTrackingOperationDto.Type.SUSPEND;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.eclipse.che.ide.api.event.ng.FileTrackingEvent.newFileTrackingMoveEvent;
 import static org.eclipse.che.ide.api.event.ng.FileTrackingEvent.newFileTrackingResumeEvent;
 import static org.eclipse.che.ide.api.event.ng.FileTrackingEvent.newFileTrackingSuspendEvent;
@@ -391,7 +390,10 @@ public class RenamePresenter implements ActionDelegate {
                     final String path = change.getPath();
                     final String oldPath = change.getOldPath();
 
-                    eventBus.fireEvent(newFileTrackingMoveEvent(path, oldPath));
+                    if (!isNullOrEmpty(oldPath)) {
+                        Log.error(getClass(), "************************* fire Move event ");
+                        eventBus.fireEvent(newFileTrackingMoveEvent(path, oldPath));
+                    }
                 }
                 eventBus.fireEvent(newFileTrackingResumeEvent());
 

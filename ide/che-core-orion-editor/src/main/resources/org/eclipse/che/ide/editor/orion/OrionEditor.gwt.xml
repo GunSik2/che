@@ -16,4 +16,5 @@
     <inherits name="com.google.gwt.user.User"/>
     <inherits name="org.eclipse.che.ide.Api"/>
     <inherits name="org.eclipse.che.plugin.requirejs.RequireJS"/>
+    <inherits name="org.eclipse.che.ide.Core"/>
 </module>

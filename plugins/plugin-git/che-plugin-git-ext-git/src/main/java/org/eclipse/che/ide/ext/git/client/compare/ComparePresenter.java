@@ -34,6 +34,7 @@ import org.eclipse.che.ide.api.dialogs.CancelCallback;
 import org.eclipse.che.ide.api.dialogs.ConfirmCallback;
 import org.eclipse.che.ide.api.dialogs.DialogFactory;
 import org.eclipse.che.ide.resource.Path;
+import org.eclipse.che.ide.util.loging.Log;
 
 import static org.eclipse.che.ide.api.notification.StatusNotification.DisplayMode.NOT_EMERGE_MODE;
 import static org.eclipse.che.ide.api.notification.StatusNotification.Status.FAIL;
@@ -238,7 +239,7 @@ public class ComparePresenter implements CompareView.ActionDelegate {
                         if (parent != null) {
                             parent.synchronize();
                         }
-
+                        Log.error(getClass(), "-- fire FileContentUpdateEvent " + comparedFile.getLocation().toString());
                         eventBus.fireEvent(new FileContentUpdateEvent(comparedFile.getLocation().toString()));
                         view.hide();
                     }

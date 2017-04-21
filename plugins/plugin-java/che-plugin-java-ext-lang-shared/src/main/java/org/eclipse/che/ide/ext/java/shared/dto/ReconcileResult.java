@@ -29,4 +29,10 @@ public interface ReconcileResult {
 
     void setHighlightedPositions(List<HighlightedPosition> positions);
 
+    /** Returns the ID of the working copy owner */
+    String getWorkingCopyOwnerID();
+
+    /** Sets the ID of the working copy owner */
+    void setWorkingCopyOwnerID(String id);
+
 }

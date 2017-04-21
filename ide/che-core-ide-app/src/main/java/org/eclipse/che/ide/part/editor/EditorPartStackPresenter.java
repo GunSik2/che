@@ -214,8 +214,17 @@ public class EditorPartStackPresenter extends PartStackPresenter implements Edit
         editorPart.addPropertyListener(new PropertyListener() {
             @Override
             public void propertyChanged(PartPresenter source, int propId) {
-                if (propId == EditorPartPresenter.PROP_INPUT && source instanceof EditorPartPresenter) {
+                if (!(source instanceof EditorPartPresenter)) {
+                    return;
+                }
+
+                if (propId == EditorPartPresenter.PROP_INPUT) {
                     editorTab.setReadOnlyMark(((EditorPartPresenter)source).getEditorInput().getFile().isReadOnly());
+                    return;
+                }
+
+                if (propId == EditorPartPresenter.PROP_DIRTY) {
+                    editorTab.setUnsavedDataMark(((EditorPartPresenter)source).isDirty());
                 }
             }
         });

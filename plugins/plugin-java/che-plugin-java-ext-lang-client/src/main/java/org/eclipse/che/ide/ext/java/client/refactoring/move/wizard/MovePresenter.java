@@ -46,6 +46,7 @@ import org.eclipse.che.ide.ext.java.shared.dto.refactoring.RefactoringResult;
 import org.eclipse.che.ide.ext.java.shared.dto.refactoring.RefactoringSession;
 import org.eclipse.che.ide.ext.java.shared.dto.refactoring.RefactoringStatus;
 import org.eclipse.che.ide.ext.java.shared.dto.refactoring.ReorgDestination;
+import org.eclipse.che.ide.util.loging.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -225,6 +226,7 @@ public class MovePresenter implements MoveView.ActionDelegate {
             @Override
             public void apply(ChangeCreationResult arg) throws OperationException {
                 if (arg.isCanShowPreviewPage()) {
+                    Log.error(getClass(), "++++++++++++++ before suspend ");
                     eventBus.fireEvent(newFileTrackingSuspendEvent());
 
                     refactorService.applyRefactoring(session).then(new Operation<RefactoringResult>() {
@@ -248,8 +250,10 @@ public class MovePresenter implements MoveView.ActionDelegate {
                                 final String path = change.getPath();
                                 final String oldPath = change.getOldPath();
 
+                                Log.error(getClass(), "++++++++++++++ before move ");
                                 eventBus.fireEvent(newFileTrackingMoveEvent(path, oldPath));
                             }
+                            Log.error(getClass(), "++++++++++++++ before resume ");
                             eventBus.fireEvent(newFileTrackingResumeEvent());
                         }
                     });
