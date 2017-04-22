@@ -88,7 +88,7 @@ describe('CheFactory', () => {
       cheBackend.factoriesBackendSetup();
 
       // fetch factory
-      factory.fetchFactories(maxItem, skipCount);
+      factory.fetchFactories(maxItem);
 
       // expecting GETs
       httpBackend.expectGET('/api/user');

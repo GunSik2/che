@@ -44,18 +44,16 @@ export class ListFactoriesController {
    * Default constructor that is using resource injection
    * @ngInject for Dependency injection
    */
-  constructor($q: ng.IQService, $log: ng.ILogService, cheAPI: CheAPI, cheNotification: CheNotification, $rootScope: che.IRootScopeService,
-              confirmDialogService: ConfirmDialogService) {
+  constructor($q: ng.IQService, $log: ng.ILogService, cheAPI: CheAPI, cheNotification: CheNotification, $rootScope: che.IRootScopeService, confirmDialogService: ConfirmDialogService) {
     this.$q = $q;
     this.$log = $log;
     this.cheAPI = cheAPI;
     this.cheNotification = cheNotification;
     this.confirmDialogService = confirmDialogService;
 
-    this.maxItems = 15;
-    this.skipCount = 0;
+    this.maxItems = 2;
 
-    this.factoriesOrderBy = '';
+    this.factoriesOrderBy = '[name, id]';
     this.factoriesFilter = {name: ''};
     this.factoriesSelectedStatus = {};
     this.isNoSelected = true;
@@ -65,7 +63,7 @@ export class ListFactoriesController {
     this.isLoading = true;
     this.factories = cheAPI.getFactory().getPageFactories();
 
-    let promise = cheAPI.getFactory().fetchFactories(this.maxItems, this.skipCount);
+    let promise = cheAPI.getFactory().fetchFactories(this.maxItems);
     promise.then(() => {
       this.isLoading = false;
     }, (error: any) => {
@@ -172,8 +170,7 @@ export class ListFactoriesController {
 
         let promise = this.cheAPI.getFactory().deleteFactoryById(factoryId);
 
-        promise.then(() => {
-        }, (error: any) => {
+        promise.catch((error: any) => {
           isError = true;
           this.$log.error('Cannot delete factory: ', error);
         });
@@ -183,11 +180,11 @@ export class ListFactoriesController {
       this.$q.all(deleteFactoryPromises).finally(() => {
         this.isLoading = true;
 
-        let promise = this.cheAPI.getFactory().fetchFactories(this.maxItems, this.skipCount);
+        let promise = this.cheAPI.getFactory().fetchFactories(this.maxItems);
 
         promise.then(() => {
           this.isLoading = false;
-        }, (error) => {
+        }, (error: any) => {
           this.isLoading = false;
           if (error.status !== 304) {
             this.cheNotification.showError(error.data.message ? error.data.message : 'Update information failed.');
@@ -213,7 +210,7 @@ export class ListFactoriesController {
 
     promise.then(() => {
       this.isLoading = false;
-    }, (error) => {
+    }, (error: any) => {
       this.isLoading = false;
       if (error.status !== 304) {
         this.cheNotification.showError(error.data && error.data.message ? error.data.message : 'Update information failed.');
